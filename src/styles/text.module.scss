@@ -1,0 +1,16 @@
+@import './variables.module.scss';
+@import './mixins.module.scss';
+
+h1, h2, h3,
+h4, h5, h6 {
+    font-family: $font-family-bold;
+    line-height: 1;
+    margin: 0;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.07em;
+}
+
+h1 {
+    font-size: 55px;
+}

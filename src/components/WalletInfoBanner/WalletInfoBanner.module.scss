@@ -1,0 +1,57 @@
+@import '../../styles/mixins.module';
+
+.outerWrapper {
+
+    margin: 40px 0 40px;
+    min-height: 100px;
+
+    @include breakpoint(xs) {
+        margin-top: 100px;
+    }
+
+    .innerWrapper {
+
+        @include flex(flex, column, wrap, center, center);
+
+        .connectedWalletWrapper {
+
+            @include flex(flex, row, wrap, center, center);
+            text-transform: capitalize;
+            
+            .walletIcon {
+                
+                &.nami {
+                    @include background-image(nami-logo, svg, contain, center, no-repeat);
+                }
+
+                &.eternl {
+                    @include background-image(eternl-logo, svg, contain, center, no-repeat);
+                }
+
+                &.flint {
+                    @include background-image(flint-logo, svg, contain, center, no-repeat);
+                }
+
+                &.gero {
+                    @include background-image(gero-logo, svg, contain, center, no-repeat);
+                }
+
+                width: 18px;
+                height: 18px;
+                margin-right: 5px;
+
+            }
+
+            span {
+                font-size: 16px;
+                margin-left: 5px;
+            }
+
+        }
+
+        .balanceWrapper {
+            margin: 10px 0;
+        }
+
+    }
+}
