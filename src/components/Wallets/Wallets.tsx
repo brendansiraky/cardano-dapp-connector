@@ -1,123 +1,92 @@
-// import { useDappConnector } from '../../../hooks/useDappConnector'
+import { useContext } from 'react'
+import { toast } from 'react-toastify'
 import { WalletInfoBanner } from '../WalletInfoBanner/WalletInfoBanner'
-import { Donate } from '../Donate/Donate'
-import styles from './Wallets.module.scss'
-import Web3Token from 'web3-cardano-token/dist/browser'
-// import Web3TokenNode from 'web3-cardano-token/dist/node'
-
-import { useLocalStorage } from 'usehooks-ts'
-import { useEffect } from 'react'
-
-import { Value } from '@emurgo/cardano-serialization-lib-asmjs'
-import { Buffer } from 'buffer'
-import { lovelaceToAda } from '@/helpers/lovelaceToAda'
 import { stringToHex } from '@/helpers/stringToHex'
-
-export const WALLETS = ['nami', 'eternl', 'flint', 'gero'] as const
-export type Wallets = typeof WALLETS[number]
- 
-const useDappConnector = () => {
-
-}
-
+import { UserWalletContext } from '@/context/UserWalletContext'
+import { convertBalanceToAda } from '@/helpers/convertBalanceToAda'
+import { WALLETS, Wallets as WalletsNames } from '@/constants/wallets'
+import styles from './Wallets.module.scss'
+const Web3Token = require('web3-cardano-token/dist/browser')
 
 export const Wallets = () => {
-    const [walletSelected, setWalletSelected] = useLocalStorage('walletSelected', '')
+    const { wallet, setWallet } = useContext(UserWalletContext)
 
-    
-    useEffect(() => {
-
-    }, [])
-    // const {
-    //     onWalletSelect,
-    //     onWalletDisconnect,
-    //     walletSelected,
-    //     isLoading,
-    //     walletValues,
-    //     onSendTransaction
-    // } = useDappConnector()
-
-    // 230152708
-
-    function convertBalanceToAda(hexBalance: string) {
-        const lovelace = Value.from_bytes(Buffer.from(hexBalance, "hex")).coin().to_str()
-        const ada = lovelaceToAda(lovelace)
-        return ada
-    }
-
-    async function handleWalletClick(wallet: Wallets) {
-
-        // const adaBalance = await enabledWallet.getBalance().then(convertBalanceToAda)
-        
+    async function handleWalletClick(wallet: WalletsNames) {
         try {
+            // Try to get the wallet object that the user is selecting
+            const walletObject = window.cardano && window.cardano[wallet]
+
+            // If it doesn't exist, we need to throw as error
+            if (!walletObject) throw { info: 'Could not enable wallet' }
+
             // Ask user to enable wallet
-            const enabledWallet = await window.cardano[wallet].enable()
+            const enabledWallet = await walletObject.enable()
 
             // get address from which we will sign message
-            const address = (await enabledWallet.getUsedAddresses())[0];
-    
-            // check if we are already verified
-            const response = await fetch(`/api/verify?address=${address}`)
-            const result = await response.json()
+            const address = await enabledWallet.getChangeAddress()
 
-            return
-            
-            // generating a token with 1 day of expiration time
             const token = await Web3Token.sign(() => {
-                return enabledWallet.signData(address, stringToHex('Please sign this message to verify your identity.'))
-            }, '7d', { nonce: 'nonce goes here' })
-    
-            console.log(token)
+                return enabledWallet.signData(
+                    address,
+                    stringToHex(
+                        'Please sign this message to verify your identity.'
+                    )
+                )
+            }, '7d')
 
-    
-            // console.log({token})
-            fetch(`/api/verify`, {
+            const response = await fetch(`api/authenticate`, {
                 method: 'POST',
-                body: JSON.stringify({ token })
-            }).then(r => r.json()).then(console.log)
-        } catch (error) {
-            console.log({error})
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ token }),
+            })
+
+            const result = await response.json()
+            if (response.status !== 200) throw { info: result.message }
+
+            const balance = await enabledWallet
+                .getBalance()
+                .then(convertBalanceToAda)
+
+            //@ts-ignore
+            const networkId = await window.cardano?.getNetworkId()
+            const network = networkId === 1 ? 'mainnet' : 'testnet'
+
+            // All good and we can set the details of the wallet
+            setWallet({
+                address: result.address,
+                balance,
+                walletSelected: wallet,
+                network,
+            })
+
+            toast.success('Successfully authenticated wallet')
+        } catch (err) {
+            const error = err as { code: number; info: string }
+            toast.error(error.info || 'Something went wrong')
         }
-
-
-        // if (walletSelected === wallet) {
-        //     // onWalletDisconnect()
-        // } else {
-        //     onWalletSelect(wallet)
-        // }
-    }
-
-    // const walletIsConnected = !isLoading && walletSelected
-    const walletIsConnected = false
-    const walletValues = {
-        address: null,
-        balance: null,
-        network: null,
-        walletEnabled: false,
     }
 
     return (
         <>
             <div className={styles.walletsWrapper}>
-                <WalletInfoBanner walletIsConnected={walletIsConnected} {...walletValues} />
+                <WalletInfoBanner wallet={wallet} />
                 <div className={styles.walletButtonsWrapper}>
-                    {WALLETS.map(wallet => (
+                    {WALLETS.map((wallet) => (
                         <div key={wallet}>
-                            <Wallet 
+                            <Wallet
                                 wallet={wallet}
                                 onClick={() => handleWalletClick(wallet)}
-                                // isLoading={isLoading && walletSelected === wallet}
-                                // isConnected={!isLoading && walletSelected === wallet}
                             />
                         </div>
                     ))}
                 </div>
             </div>
-            {/* {walletIsConnected && <Donate onDonate={onSendTransaction} />} */}
         </>
     )
 }
-
 
 type WalletProps = {
     wallet: string
@@ -126,11 +95,22 @@ type WalletProps = {
     isConnected?: boolean
 }
 
-const Wallet: React.FC<WalletProps> = ({ wallet, onClick, isLoading, isConnected }) => {
+const Wallet: React.FC<WalletProps> = ({
+    wallet,
+    onClick,
+    isLoading,
+    isConnected,
+}) => {
     return (
         <div
-            onClick={onClick} 
-            className={`${styles.walletWrapper} ${styles[wallet]} ${isLoading ? styles.loading : isConnected ? styles.connected : null}`}>
-        </div>
+            onClick={onClick}
+            className={`${styles.walletWrapper} ${styles[wallet]} ${
+                isLoading
+                    ? styles.loading
+                    : isConnected
+                    ? styles.connected
+                    : null
+            }`}
+        ></div>
     )
 }

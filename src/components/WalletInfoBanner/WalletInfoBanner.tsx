@@ -1,28 +1,32 @@
 
-import { lovelaceToAda } from '@/helpers/lovelaceToAda'
-// import { getWalletSelected } from '../../../utility/walletHelpers'
+import { Wallet } from '@/context/UserWalletContext'
 import styles from './WalletInfoBanner.module.scss'
 
 type WalletInfoBannerProps = {
-    balance: number | null
-    network: string | null
-    walletIsConnected: boolean
+    wallet: Wallet | null
 }
 
-export const WalletInfoBanner: React.FC<WalletInfoBannerProps> = ({ balance, network, walletIsConnected }) => {
-
-    const walletSelected = ''
-
+export const WalletInfoBanner: React.FC<WalletInfoBannerProps> = ({
+    wallet,
+}) => {
     return (
         <div className={styles.outerWrapper}>
             <div className={styles.innerWrapper}>
                 <div className={styles.connectedWalletWrapper}>
-                    {walletIsConnected && <div className={`${styles.walletIcon} ${styles[walletSelected]}`} />}
-                    <h4>{walletIsConnected ? walletSelected : 'No Wallet Connected'}</h4>
-                    {walletIsConnected && <span>({network})</span>}
+                    {wallet && (
+                        <div
+                            className={`${styles.walletIcon} ${
+                                styles[wallet.walletSelected]
+                            }`}
+                        />
+                    )}
+                    <h4>
+                        {wallet ? wallet.walletSelected : 'No Wallet Connected'}
+                    </h4>
+                    {wallet && <span>({wallet.network})</span>}
                 </div>
                 <div className={styles.balanceWrapper}>
-                    <h1>{walletIsConnected ? (lovelaceToAda(Number(balance))).toFixed(2) : '0.00'} ₳</h1>
+                    <h1>{wallet ? wallet.balance.toFixed(2) : '0.00'} ₳</h1>
                 </div>
             </div>
         </div>

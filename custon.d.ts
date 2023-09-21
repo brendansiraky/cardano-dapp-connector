@@ -1,45 +1,50 @@
-import { Wallets } from "@/components/Wallets/Wallets";
+import { Wallets } from '@/constants/wallets'
 
-type APIErrorCode =  {
-    InvalidRequest: -1,
-    InternalError: -2,
-    Refused: -3,
-    AccountChange: -4,
+type APIErrorCode = {
+    InvalidRequest: -1
+    InternalError: -2
+    Refused: -3
+    AccountChange: -4
 }
 
-type APIError = {
-    code: keyof APIErrorCode,
-    info: string
-}
 interface DataSignErrorCode {
-    ProofGeneration: 1,
-    AddressNotPK: 2,
-    UserDeclined: 3,
+    ProofGeneration: 1
+    AddressNotPK: 2
+    UserDeclined: 3
 }
+
 type DataSignError = {
-    code: DataSignErrorCode,
+    code: DataSignErrorCode
     info: string
 }
 
-interface EnabledWallet {
-    getBalance: () => Promise<string | APIError>
-    getChangeAddress: () => Promise<string | APIError>
-    getNetworkId: () => Promise<number | APIError>
-    getRewardAddresses: () => Promise<string[] | APIError>
-    getUnusedAddresses: () => Promise<string[] | APIError>
-    getUsedAddresses: () => Promise<string[] | APIError>
-    getUtxos: () => Promise<string[] | APIError>
-    signData: (addr: string, ) => Promise<DataSignError | APIError>
+type EnabledWallet = {
+    getBalance: () => Promise<string>
+    getChangeAddress: () => Promise<string>
+    getRewardAddresses: () => Promise<string[]>
+    getUnusedAddresses: () => Promise<string[]>
+    getUsedAddresses: () => Promise<string[]>
+    getUtxos: () => Promise<string[]>
+    signData: (addr: string, msg: string) => Promise<DataSignError>
     signTx: () => void
     submitTx: () => void
 }
 
-interface Window {
-    cardano?: {
-        [k in Wallets]: {
-            enable: () => Promise<APIError>
-            isEnabled: () => Promise<APIError | boolean> 
+declare global {
+    interface Window {
+        cardano?: {
+            [k in Wallets]: {
+                enable: () => Promise<EnabledWallet>
+            }
         }
-    },
-    getBalance?: () => Promise
+    }
+}
+
+// Extend the Window interface with the getNetworkId property
+declare global {
+    interface Window {
+        cardano?: {
+            getNetworkId: () => Promise<0 | 1>
+        }
+    }
 }
