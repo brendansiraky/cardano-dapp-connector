@@ -17,7 +17,10 @@ export const Wallets = () => {
             const walletObject = window.cardano && window.cardano[wallet]
 
             // If it doesn't exist, we need to throw as error
-            if (!walletObject) throw { info: 'Could not enable wallet' }
+            if (!walletObject)
+                throw {
+                    info: 'You do not have this wallet installed as an extension.',
+                }
 
             // Ask user to enable wallet
             const enabledWallet = await walletObject.enable()
@@ -62,10 +65,10 @@ export const Wallets = () => {
                 network,
             })
 
-            toast.success('Successfully authenticated wallet')
+            toast.success('Successfully authenticated wallet.')
         } catch (err) {
             const error = err as { code: number; info: string }
-            toast.error(error.info || 'Something went wrong')
+            toast.error(error.info || 'Something went wrong.')
         }
     }
 
